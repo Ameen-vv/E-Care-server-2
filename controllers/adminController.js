@@ -207,12 +207,12 @@ export const adminLogin = (req, res) => {
             type: "admin",
           });
           response.token = token;
-          res.status(200).json(response);
+          res.status(200).json({ok:true,token});
         } else {
-          res.status(200).json(response);
+          res.status(200).json({ok:false});
         }
       } else {
-        res.status(200).json(response);
+        res.status(200).json({ok:false});
       }
     });
   } catch (err) {
