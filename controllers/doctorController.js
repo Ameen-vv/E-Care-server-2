@@ -23,7 +23,6 @@ export const sendOtp = (req, res) => {
       } else {
         otpGenerator().then((otp) => {
           verifyOtp = otp;
-          console.log(verifyOtp);
           sendMail(email, otp).then((mail) => {
             if (mail.otpSent) {
               res.status(200).json(response);
@@ -201,8 +200,8 @@ export const resendApplication = (req, res) => {
 
 export const getDepartment = (req, res) => {
   try {
-    departmentModel.find({}).then((departments) => {
-      res.status(200).json(departments);
+    departmentModel.find({},'_id name').then((departments) => {
+      res.status(200).json({data:departments});
     });
   } catch (err) {
     res.status(500);

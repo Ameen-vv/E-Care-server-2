@@ -14,6 +14,7 @@ import {
   getSales,
   getUsers,
   listDepartment,
+  rejectDoc,
   rejectDoctor,
   unBlockDoctor,
   unBlockUser,
@@ -32,6 +33,7 @@ router.get("/unBlockDoctor/:id", adminAuthentication, unBlockDoctor);
 router.get("/getNewDoctors", adminAuthentication, getNewDoctors);
 router.get("/approve/:id", adminAuthentication, approveDoctor);
 router.post("/reject", adminAuthentication, rejectDoctor);
+router.get("/rejectDoc/:id", adminAuthentication, rejectDoc);
 router.post("/addDepartment", adminAuthentication, addDepartment);
 router.get("/departments", adminAuthentication, getDepartments);
 router.get("/unListDepartment/:id", adminAuthentication, unlistDepartment);

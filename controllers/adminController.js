@@ -16,7 +16,7 @@ import appointmentModel from "../model/appointmentSchema.js";
 export const getUsers = (req, res) => {
   try {
     userModel.find({}, { password: 0 }).then((users) => {
-      res.status(200).json(users);
+      res.status(200).json({ data: users });
     });
   } catch (err) {
     res.status(500);
@@ -37,7 +37,7 @@ export const blockUser = (req, res) => {
       )
       .then((result) => {
         result.acknowledged
-          ? res.status(200).json({ status: true })
+          ? res.status(200).json({ ok: true })
           : res.status(500);
       });
   } catch (err) {
@@ -59,7 +59,7 @@ export const unBlockUser = (req, res) => {
       )
       .then((result) => {
         result.acknowledged
-          ? res.status(200).json({ status: true })
+          ? res.status(200).json({ ok: true })
           : res.status(500);
       });
   } catch (err) {
@@ -73,7 +73,7 @@ export const getDoctor = (req, res) => {
       .find({ verification: "success" }, { password: 0 })
       .populate("department")
       .then((doctors) => {
-        res.status(200).json(doctors);
+        res.status(200).json({ data: doctors });
       });
   } catch (err) {
     res.status(500);
@@ -94,7 +94,7 @@ export const blockDoctor = (req, res) => {
       )
       .then((result) => {
         result.acknowledged
-          ? res.status(200).json({ status: true })
+          ? res.status(200).json({ ok: true })
           : res.status(500);
       });
   } catch (err) {
@@ -116,7 +116,7 @@ export const unBlockDoctor = (req, res) => {
       )
       .then((result) => {
         result.acknowledged
-          ? res.status(200).json({ status: true })
+          ? res.status(200).json({ ok: true })
           : res.status(500);
       });
   } catch (err) {
@@ -128,8 +128,9 @@ export const getNewDoctors = (req, res) => {
   try {
     doctorModel
       .find({ verification: "pending" }, { password: 0 })
+      .populate("department")
       .then((doctors) => {
-        res.status(200).json(doctors);
+        res.status(200).json({data:doctors});
       });
   } catch (err) {
     res.status(500);
@@ -160,7 +161,7 @@ export const approveDoctor = (req, res) => {
           )
           .then((data) => {
             data.acknowledged
-              ? res.status(200).json({ status: true })
+              ? res.status(200).json({ ok: true })
               : res.status(500);
           });
       });
@@ -193,6 +194,39 @@ export const rejectDoctor = (req, res) => {
   }
 };
 
+export const rejectDoc = (req, res) => {
+  try {
+    let doctorId = req.params.id;
+    doctorModel
+      .findOneAndUpdate(
+        { _id: doctorId },
+        {
+          $set: {
+            verification: "rejected",
+          },
+        }
+      )
+      .then((doctor) => {
+        departmentModel
+          .updateOne(
+            { _id: doctor.department },
+            {
+              $push: {
+                doctors: doctor._id,
+              },
+            }
+          )
+          .then((data) => {
+            data.acknowledged
+              ? res.status(200).json({ ok: true })
+              : res.status(500);
+          });
+      });
+  } catch (err) {
+    res.status(500);
+  }
+};
+
 export const adminLogin = (req, res) => {
   try {
     let { email, password } = req.body;
@@ -207,12 +241,12 @@ export const adminLogin = (req, res) => {
             type: "admin",
           });
           response.token = token;
-          res.status(200).json({ok:true,token});
+          res.status(200).json({ ok: true, token });
         } else {
-          res.status(200).json({ok:false});
+          res.status(200).json({ ok: false });
         }
       } else {
-        res.status(200).json({ok:false});
+        res.status(200).json({ ok: false });
       }
     });
   } catch (err) {
@@ -256,7 +290,7 @@ export const addDepartment = async (req, res) => {
 export const getDepartments = (req, res) => {
   try {
     departmentModel.find().then((deparments) => {
-      res.status(200).json(deparments);
+      res.status(200).json({data:deparments});
     });
   } catch (err) {
     res.status(500);
@@ -277,7 +311,7 @@ export const unlistDepartment = (req, res) => {
       )
       .then((result) => {
         result.acknowledged
-          ? res.status(200).json({ status: true })
+          ? res.status(200).json({ ok: true })
           : res.status(500);
       });
   } catch (err) {
@@ -299,7 +333,7 @@ export const listDepartment = (req, res) => {
       )
       .then((result) => {
         result.acknowledged
-          ? res.status(200).json({ status: true })
+          ? res.status(200).json({ ok: true })
           : res.status(500);
       });
   } catch (err) {
