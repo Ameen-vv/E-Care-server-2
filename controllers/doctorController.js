@@ -66,6 +66,37 @@ export const doctorSignUp = (req, res) => {
   }
 };
 
+export const docSignUpWoOtp = (req, res) => {
+  try {
+    let doctor = req.body.doctorData;
+    doctorModel.findOne({ email: doctor.email }).then((result) => {
+      if (result) {
+        res
+          .status(200)
+          .json({ ok: false, message: "User already exists with this email" });
+      } else {
+        const image = req.body.imageData;
+        cloudinary.uploader
+          .upload(image, { upload_preset: "Ecare" })
+          .then((result) => {
+            bcrypt.hash(doctor.password, 10).then((hash) => {
+              doctor.password = hash;
+              doctor.licenseUrl = result.secure_url;
+              const newDoctor = new doctorModel(doctor);
+              newDoctor.save().then(() => {
+                res
+                  .status(200)
+                  .json({ ok: true, message: "SignUp Successfull" });
+              });
+            });
+          });
+      }
+    });
+  } catch (err) {
+    res.status(500);
+  }
+};
+
 export const resendOtp = (req, res) => {
   try {
     let response = {};
@@ -88,7 +119,6 @@ export const resendOtp = (req, res) => {
 
 export const SignIn = (req, res) => {
   try {
-    let response = {};
     const { email, password } = req.body;
     doctorModel.findOne({ email: email }).then((doctor) => {
       if (doctor) {
@@ -101,31 +131,44 @@ export const SignIn = (req, res) => {
                   doctorName: doctor.fullName,
                   type: "doctor",
                 });
-                response.token = token;
-                response.status = "success";
-                res.status(200).json(response);
+                res
+                  .status(200)
+                  .json({ ok: true, message: "login success", token });
               } else if (doctor.verification === "pending") {
-                response.status = "pending";
-                res.status(200).json(response);
+                res
+                  .status(200)
+                  .json({
+                    ok: false,
+                    message:
+                      "Verification is pending please try after some time",
+                  });
               } else {
-                response.status = "rejected";
-                response.id = doctor._id;
-                res.status(200).json(response);
+                // response.status = "rejected";
+                // response.id = doctor._id;
+                res
+                  .status(200)
+                  .json({ ok: false, message: "Your profile was rejected" });
               }
             } else if (err) {
               res.status(500);
             } else {
-              response.status = "error";
-              res.status(200).json(response);
+              res
+                .status(200)
+                .json({ ok: false, message: "Incorrect password" });
             }
           });
         } else {
-          response.status = "block";
-          res.status(200).json(response);
+          res
+            .status(200)
+            .json({ ok: false, message: "You are blocked by admin" });
         }
       } else {
-        response.status = "noUser";
-        res.status(200).json(response);
+        res
+          .status(200)
+          .json({
+            ok: false,
+            message: "no user with this email please register",
+          });
       }
     });
   } catch (err) {
@@ -166,7 +209,7 @@ export const rejectedUser = (req, res) => {
   try {
     let doctorId = req.params.id;
     let response = {};
-    doctorMode.findOne({ _id: doctorId }).then((doctor) => {
+    doctorModel.findOne({ _id: doctorId }).then((doctor) => {
       response.details = doctor?.rejectReason;
       response.status = true;
       res.status(200).json(response);
@@ -200,8 +243,8 @@ export const resendApplication = (req, res) => {
 
 export const getDepartment = (req, res) => {
   try {
-    departmentModel.find({},'_id name').then((departments) => {
-      res.status(200).json({data:departments});
+    departmentModel.find({}, "_id name").then((departments) => {
+      res.status(200).json({ data: departments });
     });
   } catch (err) {
     res.status(500);
@@ -214,7 +257,7 @@ export const getDocDetails = (req, res) => {
       .findOne({ _id: req.doctorLogged })
       .populate("department")
       .then((doctor) => {
-        res.status(200).json(doctor);
+        res.status(200).json({data:doctor});
       });
   } catch (err) {
     res.status(500);
@@ -337,7 +380,7 @@ export const getAppointmentsDoctor = (req, res) => {
       .find(query)
       .populate("patientId", "fullName phone email _id")
       .then((appointments) => {
-        res.status(200).json(appointments);
+        res.status(200).json({data:appointments});
       });
   } catch (err) {
     res.status(500);
@@ -348,7 +391,7 @@ export const appointmentVisited = (req, res) => {
   try {
     appointmentModel
       .updateOne(
-        { _id: req.query.appointmentId },
+        { _id: req.params.id },
         {
           $set: {
             status: "visited",
@@ -357,7 +400,7 @@ export const appointmentVisited = (req, res) => {
       )
       .then((update) => {
         update.acknowledged
-          ? res.status(200).json({ update: true })
+          ? res.status(200).json({ ok: true })
           : res.status(200);
       });
   } catch (err) {
@@ -369,7 +412,7 @@ export const appointmentUnVisited = (req, res) => {
   try {
     appointmentModel
       .updateOne(
-        { _id: req.query.appointmentId },
+        { _id: req.params.id },
         {
           $set: {
             status: "unVisited",
@@ -378,7 +421,7 @@ export const appointmentUnVisited = (req, res) => {
       )
       .then((update) => {
         update.acknowledged
-          ? res.status(200).json({ update: true })
+          ? res.status(200).json({ ok: true })
           : res.status(200);
       });
   } catch (err) {
@@ -389,7 +432,7 @@ export const appointmentUnVisited = (req, res) => {
 export const cancelAppointment = (req, res) => {
   try {
     appointmentModel
-      .findOne({ _id: req.query.appointmentId })
+      .findOne({ _id: req.params.id })
       .then((appointment) => {
         let transaction = new walletTransactionModel({
           amount: appointment.price,
@@ -411,7 +454,7 @@ export const cancelAppointment = (req, res) => {
             .then(() => {
               appointmentModel
                 .updateOne(
-                  { _id: req.query.appointmentId },
+                  { _id: req.params.id },
                   {
                     $set: {
                       status: "cancelled",
@@ -420,7 +463,7 @@ export const cancelAppointment = (req, res) => {
                 )
                 .then((update) => {
                   update.acknowledged
-                    ? res.status(200).json({ cancel: true })
+                    ? res.status(200).json({ ok: true })
                     : res.status(200);
                 });
             });
