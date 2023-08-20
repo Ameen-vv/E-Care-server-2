@@ -288,8 +288,7 @@ export const editProfile = (req, res) => {
 
 export const timeSlots = (req, res) => {
   try {
-    let response = {};
-    let slots = req.body.timeData;
+    let slots = req.body.data;
     checkSlots(slots, req.doctorLogged).then((check) => {
       if (!check) {
         doctorModel
@@ -303,13 +302,11 @@ export const timeSlots = (req, res) => {
           )
           .then((update) => {
             update.acknowledged
-              ? (response.status = true)
-              : (response.status = false);
-            res.status(200).json(response);
+            ? res.status(200).json({ok:true,message:'Time slot added'}) :
+            res.status(200).json({ok:false,message:'something went wrong'})
           });
       } else {
-        response.status = false;
-        res.status(200).json(response);
+        res.status(200).json({ok:false,message:'Slot already exists'});
       }
     });
   } catch (err) {
@@ -320,7 +317,6 @@ export const timeSlots = (req, res) => {
 export const deleteSlot = (req, res) => {
   try {
     const data = req.body.data;
-    let response = {};
     doctorModel
       .updateOne(
         { _id: req.doctorLogged },
@@ -332,12 +328,12 @@ export const deleteSlot = (req, res) => {
       )
       .then((result) => {
         result.acknowledged
-          ? (response.status = true)
-          : (response.status = false);
-        res.status(200).json(response);
+          ? res.status(200).json({ok:true,message:'Slot deleted'})
+          : res.status(200).json({ok:false,message:'Something went wrong'});
+        
       });
   } catch (err) {
-    res.status(500).json({ status: false });
+    res.status(500).json({ ok: false });
   }
 };
 
