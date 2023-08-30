@@ -258,12 +258,10 @@ export const addDepartment = async (req, res) => {
   try {
     const data = req.body.departmentData;
     const image = req.body.imageData;
-    let response = {};
     let departmentName = await titleCase(data.department);
     departmentModel.findOne({ name: departmentName }).then((department) => {
       if (department) {
-        response.status = "exist";
-        res.status(200).json(response);
+        res.status(200).json({ok:false,message:'Department Already Exists'});
       } else {
         cloudinary.uploader
           .upload(image, { upload_preset: "Ecare" })
@@ -276,8 +274,7 @@ export const addDepartment = async (req, res) => {
               imageUrl: imageData.secure_url,
             });
             newDepartment.save().then(() => {
-              response.status = "success";
-              res.status(200).json(response);
+              res.status(200).json({ok:true,message:'department added successfully'});
             });
           });
       }
